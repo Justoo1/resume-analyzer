@@ -31,7 +31,6 @@ const Upload = () => {
 
     setStatusText("Uploading the image...");
     const uploadedImage = await fs?.upload([imageFile.file]);
-    console.log(uploadedImage)
     if(!uploadedImage) return setStatusText('Error: Failed to upload image.');
 
     setStatusText("Preparing data...");
@@ -66,6 +65,7 @@ const Upload = () => {
     setStatusText('Analysis complete, redirecting...');
 
     console.log(data)
+    navigate(`/resume/${uuid}`);
   }
 
   const handleSubmit = (e:FormEvent<HTMLFormElement>) => {
