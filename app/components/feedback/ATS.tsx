@@ -34,10 +34,10 @@ const ATS = ({
       </div>
       <div className="flex flex-col gap-2">
         <p className="font-medium text-xl">
-          How well does your resume pass through Applicant Tracking Systems?
+          How well does your CV pass through Applicant Tracking Systems?
         </p>
         <p className="text-lg text-gray-500">
-          Your resume was scanned like an employer would. Here's how it
+          Your CV was scanned like an employer would. Here's how it
           performed:
         </p>
         {suggestions.map((suggestion, index) => (
