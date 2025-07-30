@@ -1,10 +1,9 @@
 import Navbar from "~/components/Navbar";
 import type { Route } from "./+types/home";
-import { resumes } from "constants/index";
 import ResumeCard from "~/components/ResumeCard";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePuterStore } from "~/lib/puter";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,29 +13,66 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const { auth } = usePuterStore();
+  const { auth, kv } = usePuterStore();
   const navigate = useNavigate();
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [loadingResumes, setLoadingResumes] = useState(false);
+
 
   useEffect(() => {
     if(!auth.isAuthenticated) navigate('/auth?next=/')
   }, [auth.isAuthenticated])
 
-  return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
+  useEffect(() => {
+    const loadResumes = async () => {
+      setLoadingResumes(true);
+      const resumes = (await kv.list('resume-*', true)) as KVItem[];
+      const parsedResumes = resumes?.map((resume) => (
+        JSON.parse(resume.value) as Resume
+      ));
+
+      setResumes(parsedResumes || []);
+      setLoadingResumes(false);
+    }
+
+    loadResumes();
+  },[])
+
+  return <main className="bg-[url('/images/bg-main.svg')] colorable-svg bg-cover">
     <Navbar />
     <section  className="main-section">
       <div className="page-heading py-16">
         <h1>Track Your Applications & CV Ratings</h1>
-        <h2>Review your submissions and check AI-powered feedback</h2>
+        {!loadingResumes && resumes.length === 0 ? (
+          <h2>NO CV's found. Upload your CVs to get started</h2>
+        ): (
+          <h2>Review your submissions and check AI-powered feedback</h2>
+        )}
       </div>
 
+      {loadingResumes &&(
+        <div className="flex flex-col items-center justify-center">
+          <img src="/images/resume-scan-2.gif" alt="resume scan" className="w-[200px]" />
+        </div>
+      )}
+
       {
-        resumes.length > 0 && (
+        !loadingResumes && resumes.length > 0 && (
           <div className="resumes-section">
             {
               resumes.map((resume:Resume) => (
                 <ResumeCard key={resume.id} resume={resume} />
               ))
             }
+          </div>
+        )
+      }
+      {
+        !loadingResumes && resumes.length === 0 && (
+          <div className="flex flex-col items-center justify-center mt-10 gap-4">
+            <Link to="/upload" className="primary-button w-fit text-xl font-semibold">
+              Upload CV
+            </Link>
           </div>
         )
       }

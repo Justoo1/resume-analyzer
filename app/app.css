@@ -5,7 +5,7 @@
 @theme {
   --font-sans: "Mona Sans", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --color-dark-200: #475467;
+  --color-dark-200: #2a5a4dff;
   --color-light-blue-100: #c1d3f81a;
   --color-light-blue-200: #a7bff14d;
 
@@ -114,6 +114,11 @@ form {
   .uploader-selected-file {
     @apply flex items-center justify-between p-3 bg-gray-50 rounded-2xl;
   }
+  
+}
+
+@utility colorable-svg {
+  filter: hue-rotate(300deg); /* Changes colors */
 }
 
 @utility bg-gradient {
