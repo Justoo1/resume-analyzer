@@ -4,6 +4,7 @@ import ResumeCard from "~/components/ResumeCard";
 import { useEffect, useState } from "react";
 import { usePuterStore } from "~/lib/puter";
 import { Link, useNavigate } from "react-router";
+import { CVRefineIcon } from "~/components/favicon";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -73,6 +74,7 @@ export default function Home() {
             <Link to="/upload" className="primary-button w-fit text-xl font-semibold">
               Upload CV
             </Link>
+            <CVRefineIcon />
           </div>
         )
       }

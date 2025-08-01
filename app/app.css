@@ -5,11 +5,11 @@
 @theme {
   --font-sans: "Mona Sans", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --color-dark-200: #2a5a4dff;
+  --color-dark-200: #3b82f6;
   --color-light-blue-100: #c1d3f81a;
-  --color-light-blue-200: #a7bff14d;
+  --color-light-blue-200: #60a5fa;
 
-  --color-badge-green: #d5faf1;
+  --color-badge-green: #06b6d4;
   --color-badge-red: #f9e3e2;
   --color-badge-yellow: #fceed8;
 
