@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { CVRefineSectionBackground } from "~/components/background";
 import ATS from "~/components/feedback/ATS";
 import Details from "~/components/feedback/Details";
 import Summary from "~/components/feedback/Summary";
@@ -66,15 +67,17 @@ const Resume = () => {
                 </Link>
             </nav>
             <div className="flex flex-row w-full max-lg:flex-col-reverse">
-                <section className="feedback-section bg-[url('/images/bg-small.svg')] bg-cover w-full h-[100vh] sticky top-0 items-center justify-center">
-                    {imageUrl && resumeUrl && (
-                        <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-2xl:h-fit w-fit">
-                            <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
-                                <img src={imageUrl} alt="resume" className="w-full h-full object-contain rounded-2xl" />
-                            </a>
-                        </div>
-                    )}
-                </section>
+                <CVRefineSectionBackground className="w-full h-[100vh] sticky top-0 items-center justify-center">
+                    <section className="feedback-section w-full h-[100vh] sticky top-0 items-center justify-center">
+                        {imageUrl && resumeUrl && (
+                            <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-2xl:h-fit w-fit">
+                                <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+                                    <img src={imageUrl} alt="resume" className="w-full h-full object-contain rounded-2xl" />
+                                </a>
+                            </div>
+                        )}
+                    </section>
+                </CVRefineSectionBackground>
                 <div className="feedback-section">
                     <h2 className="text-4xl !text-black font-bold">CV Review</h2>
                     {feedback ? (
