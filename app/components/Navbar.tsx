@@ -9,6 +9,7 @@ const Navbar = () => {
         <Link to="/upload" className="primary-button w-fit">
             Upload CV
         </Link>
+        <Link to="/wipe" className="secondary-button w-fit">Wipe Data</Link>
     </nav>
   )
 }
