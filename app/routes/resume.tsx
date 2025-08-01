@@ -7,7 +7,7 @@ import { usePuterStore } from "~/lib/puter";
 
 export const meta = () => {
     return [
-        { title: "CVAnalyst | Review" },
+        { title: "CVRefine | Review" },
         { name: "description", content: "Detailed CV overview" },
     ];
 }

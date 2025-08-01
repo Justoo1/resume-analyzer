@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "CVAnalyst" },
+    { title: "CVRefine" },
     { name: "description", content: "Smart CV Analyzer" },
   ];
 }

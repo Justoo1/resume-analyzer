@@ -4,7 +4,7 @@ import { usePuterStore } from "~/lib/puter";
 
 export const meta = () => {
     return [
-        { title: "CVAnalyst | Auth" },
+        { title: "CVRefine | Auth" },
         { name: "description", content: "Log into your account" },
     ];
 }
