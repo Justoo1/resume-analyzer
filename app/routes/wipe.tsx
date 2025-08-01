@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { CVRefineSectionBackground } from "~/components/background";
 import { usePuterStore } from "~/lib/puter";
 
 const WipeApp = () => {
@@ -39,25 +40,27 @@ const WipeApp = () => {
     }
 
     return (
-        <div>
-            Authenticated as: {auth.user?.username}
-            <div>Existing files:</div>
-            <div className="flex flex-col gap-4">
-                {files.map((file) => (
-                    <div key={file.id} className="flex flex-row gap-4">
-                        <p>{file.name}</p>
-                    </div>
-                ))}
-            </div>
+       <CVRefineSectionBackground className="h-screen w-full">
             <div>
-                <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
-                    onClick={() => handleDelete()}
-                >
-                    Wipe App Data
-                </button>
+                Authenticated as: {auth.user?.username}
+                <div>Existing files:</div>
+                <div className="flex flex-col gap-4">
+                    {files.map((file) => (
+                        <div key={file.id} className="flex flex-row gap-4">
+                            <p>{file.name}</p>
+                        </div>
+                    ))}
+                </div>
+                <div>
+                    <button
+                        className="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer"
+                        onClick={() => handleDelete()}
+                    >
+                        Wipe App Data
+                    </button>
+                </div>
             </div>
-        </div>
+       </CVRefineSectionBackground>
     );
 };
 

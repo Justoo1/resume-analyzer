@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePuterStore } from "~/lib/puter";
 import { Link, useNavigate } from "react-router";
 import { CVRefineIcon } from "~/components/favicon";
+import { CVRefineSectionBackground } from "~/components/background";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -39,45 +40,49 @@ export default function Home() {
     loadResumes();
   },[])
 
-  return <main className="bg-[url('/images/bg-main.svg')] colorable-svg bg-cover">
-    <Navbar />
-    <section  className="main-section">
-      <div className="page-heading py-16">
-        <h1>Track Your Applications & CV Ratings</h1>
-        {!loadingResumes && resumes.length === 0 ? (
-          <h2>NO CV's found. Upload your CVs to get started</h2>
-        ): (
-          <h2>Review your submissions and check AI-powered feedback</h2>
-        )}
-      </div>
-
-      {loadingResumes &&(
-        <div className="flex flex-col items-center justify-center">
-          <img src="/images/resume-scan-2.gif" alt="resume scan" className="w-[200px]" />
-        </div>
-      )}
-
-      {
-        !loadingResumes && resumes.length > 0 && (
-          <div className="resumes-section">
-            {
-              resumes.map((resume:Resume) => (
-                <ResumeCard key={resume.id} resume={resume} />
-              ))
-            }
+  return (
+    <CVRefineSectionBackground>
+      <main className="">
+        <Navbar />
+        <section  className="main-section">
+          <div className="page-heading py-16">
+            <h1>Refine Your Resume, Land Your Dream Job</h1>
+            {!loadingResumes && resumes.length === 0 ? (
+              <h2>Ready for better job matches? Upload your first CV to unlock AI-powered insights</h2>
+            ): (
+              <h2>Smart CV Review & AI-Driven Improvements</h2>
+            )}
           </div>
-        )
-      }
-      {
-        !loadingResumes && resumes.length === 0 && (
-          <div className="flex flex-col items-center justify-center mt-10 gap-4">
-            <Link to="/upload" className="primary-button w-fit text-xl font-semibold">
-              Upload CV
-            </Link>
-            <CVRefineIcon />
-          </div>
-        )
-      }
-    </section>
-  </main>
+
+          {loadingResumes &&(
+            <div className="flex flex-col items-center justify-center">
+              <img src="/images/resume-scan-2.gif" alt="resume scan" className="w-[200px]" />
+            </div>
+          )}
+
+          {
+            !loadingResumes && resumes.length > 0 && (
+              <div className="resumes-section">
+                {
+                  resumes.map((resume:Resume) => (
+                    <ResumeCard key={resume.id} resume={resume} />
+                  ))
+                }
+              </div>
+            )
+          }
+          {
+            !loadingResumes && resumes.length === 0 && (
+              <div className="flex flex-col items-center justify-center mt-10 gap-4">
+                <Link to="/upload" className="primary-button w-fit text-xl font-semibold">
+                  Upload CV
+                </Link>
+                <CVRefineIcon />
+              </div>
+            )
+          }
+        </section>
+      </main>
+    </CVRefineSectionBackground>
+  )
 }
