@@ -49,6 +49,47 @@ form {
   @apply flex flex-col items-start gap-8 w-full;
 }
 
+/* CV Section Styles */
+.cv-section {
+  @apply mb-8 last:mb-0;
+}
+
+.cv-section h4 {
+  @apply text-xl font-semibold text-gray-900 mb-4;
+}
+
+.cv-section h5 {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+/* Restructured CV specific styles */
+.restructured-cv-container {
+  @apply bg-white rounded-2xl shadow-lg border border-gray-200;
+}
+
+.restructured-cv-header {
+  @apply flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50 rounded-t-2xl;
+}
+
+.restructured-cv-content {
+  @apply p-6 max-h-96 overflow-y-auto;
+}
+
+/* Print styles for CV */
+@media print {
+  .restructured-cv-container {
+    @apply shadow-none border-none;
+  }
+  
+  .restructured-cv-header {
+    @apply bg-white;
+  }
+  
+  button {
+    @apply hidden;
+  }
+}
+
 @layer components {
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[#5bb2d8] via-[#000000] to-[#034ea3];

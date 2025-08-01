@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { prepareRestructureInstructions } from "constants/index";
 import { Link, useNavigate, useParams } from "react-router";
 import { CVRefineSectionBackground } from "~/components/background";
 import ATS from "~/components/feedback/ATS";
 import Details from "~/components/feedback/Details";
 import Summary from "~/components/feedback/Summary";
+import RestructuredCV from "~/components/RestructuredCV";
 import { usePuterStore } from "~/lib/puter";
 
 export const meta = () => {
@@ -14,11 +16,15 @@ export const meta = () => {
 }
 
 const Resume = () => {
-    const { auth, isLoading, fs, kv } = usePuterStore();
+    const { auth, isLoading, fs, kv, ai } = usePuterStore();
     const { id } = useParams();
     const [imageUrl, setImageUrl] = useState('');
     const [resumeUrl, setResumeUrl] = useState('');
     const [feedback , setFeedback] = useState<Feedback | null>(null);
+    const [resumeData, setResumeData] = useState<any>(null);
+    const [restructuredCV, setRestructuredCV] = useState<RestructuredCV | null>(null);
+    const [isRestructuring, setIsRestructuring] = useState(false);
+    const [showRestructured, setShowRestructured] = useState(false);
     const navigate = useNavigate();
 
      useEffect(() => {
@@ -32,6 +38,8 @@ const Resume = () => {
 
             const data = JSON.parse(resume);
             console.log(data)
+            setResumeData(data);
+            
             const resumeBlob = await fs.read(data.resumePath);
             if(!resumeBlob) return;
 
@@ -47,16 +55,61 @@ const Resume = () => {
             setResumeUrl(resumeUrl);
             setImageUrl(imageUrl);
             setFeedback(data.feedback);
+            
+            // Load existing restructured CV if available
+            if (data.restructuredCV) {
+                setRestructuredCV(data.restructuredCV);
+                setShowRestructured(true);
+            }
 
             console.log({
                 resumeUrl,
                 imageUrl,
-                feedback: data.feedback
+                feedback: data.feedback,
+                restructuredCV: data.restructuredCV
             })
         }
 
         loadResume();
     },[id])
+
+    const handleRestructureCV = async () => {
+        if (!resumeData || !feedback) return;
+        
+        setIsRestructuring(true);
+        
+        try {
+            const restructurePrompt = prepareRestructureInstructions({
+                jobTitle: resumeData.jobTitle || 'Not specified',
+                jobDescription: resumeData.jobDescription || 'Not specified',
+                feedback: feedback
+            });
+            
+            const response = await ai.restructure(resumeData.resumePath, restructurePrompt);
+            
+            if (response) {
+                const responseText = typeof response.message.content === 'string' 
+                    ? response.message.content 
+                    : response.message.content[0].text;
+                
+                const restructuredData = JSON.parse(responseText);
+                setRestructuredCV(restructuredData);
+                setShowRestructured(true);
+                
+                // Save the restructured CV to storage
+                const updatedResumeData = {
+                    ...resumeData,
+                    restructuredCV: restructuredData
+                };
+                await kv.set(`resume-${id}`, JSON.stringify(updatedResumeData));
+                setResumeData(updatedResumeData);
+            }
+        } catch (error) {
+            console.error('Error restructuring CV:', error);
+        } finally {
+            setIsRestructuring(false);
+        }
+    };
 
     return (
         <main className="!pt-0 colorable-svg">
@@ -79,8 +132,53 @@ const Resume = () => {
                     </section>
                 </CVRefineSectionBackground>
                 <div className="feedback-section">
-                    <h2 className="text-4xl !text-black font-bold">CV Review</h2>
-                    {feedback ? (
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-4xl !text-black font-bold">CV Review</h2>
+                        {feedback && !showRestructured && (
+                            <button
+                                onClick={handleRestructureCV}
+                                disabled={isRestructuring}
+                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            >
+                                {isRestructuring ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Restructuring...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Restructure CV
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {showRestructured && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setShowRestructured(false)}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                >
+                                    Show Feedback
+                                </button>
+                                <button
+                                    onClick={() => setShowRestructured(true)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Show Restructured CV
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {showRestructured && restructuredCV ? (
+                        <RestructuredCV 
+                            restructuredCV={restructuredCV} 
+                            isGenerating={isRestructuring}
+                        />
+                    ) : feedback ? (
                         <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
                             <Summary feedback={feedback} />
                             <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
