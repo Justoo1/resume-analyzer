@@ -25,6 +25,9 @@ const Resume = () => {
     const [restructuredCV, setRestructuredCV] = useState<RestructuredCV | null>(null);
     const [isRestructuring, setIsRestructuring] = useState(false);
     const [showRestructured, setShowRestructured] = useState(false);
+    const [isReplacing, setIsReplacing] = useState(false);
+    const [isReanalyzing, setIsReanalyzing] = useState(false);
+    const [title, setTitle] = useState('CV Review');
     const navigate = useNavigate();
 
      useEffect(() => {
@@ -60,6 +63,7 @@ const Resume = () => {
             if (data.restructuredCV) {
                 setRestructuredCV(data.restructuredCV);
                 setShowRestructured(true);
+                setTitle('Restructured CV');
             }
 
             console.log({
@@ -72,6 +76,92 @@ const Resume = () => {
 
         loadResume();
     },[id])
+
+    const generateRestructuredCVText = (restructuredCV: RestructuredCV) => {
+        let cvText = '';
+        
+        // Personal Info
+        if (restructuredCV.personalInfo.name) {
+            cvText += `${restructuredCV.personalInfo.name}\n`;
+        }
+        const contactInfo = [
+            restructuredCV.personalInfo.email,
+            restructuredCV.personalInfo.phone,
+            restructuredCV.personalInfo.location,
+            restructuredCV.personalInfo.linkedin,
+            restructuredCV.personalInfo.github,
+            restructuredCV.personalInfo.website
+        ].filter(Boolean);
+        
+        if (contactInfo.length > 0) {
+            cvText += `${contactInfo.join(' | ')}\n\n`;
+        }
+
+        // Professional Summary
+        cvText += `PROFESSIONAL SUMMARY\n`;
+        cvText += `${restructuredCV.professionalSummary}\n\n`;
+
+        // Experience
+        if (restructuredCV.experience.length > 0) {
+            cvText += `PROFESSIONAL EXPERIENCE\n`;
+            restructuredCV.experience.forEach(exp => {
+                cvText += `\n${exp.position}\n`;
+                cvText += `${exp.company}`;
+                if (exp.location) cvText += ` | ${exp.location}`;
+                cvText += `\n${exp.duration}\n`;
+                exp.achievements.forEach(achievement => {
+                    cvText += `• ${achievement}\n`;
+                });
+            });
+            cvText += '\n';
+        }
+
+        // Education
+        if (restructuredCV.education.length > 0) {
+            cvText += `EDUCATION\n`;
+            restructuredCV.education.forEach(edu => {
+                cvText += `\n${edu.degree}\n`;
+                cvText += `${edu.institution}`;
+                if (edu.location) cvText += ` | ${edu.location}`;
+                cvText += `\n${edu.duration}`;
+                if (edu.gpa) cvText += ` | GPA: ${edu.gpa}`;
+                cvText += '\n';
+                if (edu.relevantCoursework && edu.relevantCoursework.length > 0) {
+                    cvText += `Relevant Coursework: ${edu.relevantCoursework.join(', ')}\n`;
+                }
+            });
+            cvText += '\n';
+        }
+
+        // Skills
+        cvText += `TECHNICAL SKILLS\n`;
+        if (restructuredCV.skills.technical.length > 0) {
+            cvText += `Technical: ${restructuredCV.skills.technical.join(', ')}\n`;
+        }
+        if (restructuredCV.skills.soft.length > 0) {
+            cvText += `Soft Skills: ${restructuredCV.skills.soft.join(', ')}\n`;
+        }
+        if (restructuredCV.skills.languages && restructuredCV.skills.languages.length > 0) {
+            cvText += `Languages: ${restructuredCV.skills.languages.join(', ')}\n`;
+        }
+        if (restructuredCV.skills.certifications && restructuredCV.skills.certifications.length > 0) {
+            cvText += `Certifications: ${restructuredCV.skills.certifications.join(', ')}\n`;
+        }
+
+        // Projects
+        if (restructuredCV.projects && restructuredCV.projects.length > 0) {
+            cvText += `\nPROJECTS\n`;
+            restructuredCV.projects.forEach(project => {
+                cvText += `\n${project.name}\n`;
+                cvText += `${project.description}\n`;
+                cvText += `Technologies: ${project.technologies.join(', ')}`;
+                if (project.link) cvText += ` | ${project.link}`;
+                cvText += '\n';
+            });
+        }
+
+        return cvText;
+    };
 
     const handleRestructureCV = async () => {
         if (!resumeData || !feedback) return;
@@ -111,6 +201,94 @@ const Resume = () => {
         }
     };
 
+    const handleReplaceCV = async () => {
+        if (!restructuredCV || !resumeData) return;
+        
+        setIsReplacing(true);
+        
+        try {
+            // Generate the restructured CV as text
+            const restructuredText = generateRestructuredCVText(restructuredCV);
+            
+            // Create a new text file with the restructured content
+            const blob = new Blob([restructuredText], { type: 'text/plain' });
+            
+            // Generate a new filename
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const newFileName = `restructured-cv-${timestamp}.txt`;
+            
+            // Save the new file to Puter filesystem
+            const newFile = await fs.write(newFileName, blob);
+            
+            if (newFile) {
+                // Update the resume data with the new file path
+                const updatedResumeData = {
+                    ...resumeData,
+                    resumePath: newFileName,
+                    originalResumePath: resumeData.resumePath, // Keep reference to original
+                    isRestructured: true,
+                    replacedAt: new Date().toISOString()
+                };
+                
+                // Save updated data to KV store
+                await kv.set(`resume-${id}`, JSON.stringify(updatedResumeData));
+                setResumeData(updatedResumeData);
+                
+                // Re-analyze the new CV against the job description
+                if (resumeData.jobDescription) {
+                    await reanalyzeCV(newFileName, updatedResumeData);
+                }
+                
+                // Reset restructured view to show new feedback
+                setShowRestructured(false);
+                setRestructuredCV(null);
+            }
+        } catch (error) {
+            console.error('Error replacing CV:', error);
+        } finally {
+            setIsReplacing(false);
+        }
+    };
+
+    const reanalyzeCV = async (newFilePath: string, updatedData: any) => {
+        setIsReanalyzing(true);
+        
+        try {
+            // Import the feedback prompt preparation function
+            const { prepareInstructions } = await import("constants/index");
+            
+            const feedbackPrompt = prepareInstructions({
+                jobTitle: updatedData.jobTitle || 'Not specified',
+                jobDescription: updatedData.jobDescription || 'Not specified'
+            });
+            
+            const response = await ai.feedback(newFilePath, feedbackPrompt);
+            
+            if (response) {
+                const responseText = typeof response.message.content === 'string' 
+                    ? response.message.content 
+                    : response.message.content[0].text;
+                
+                const newFeedback = JSON.parse(responseText);
+                setFeedback(newFeedback);
+                
+                // Update the resume data with new feedback
+                const finalUpdatedData = {
+                    ...updatedData,
+                    feedback: newFeedback,
+                    reanalyzedAt: new Date().toISOString()
+                };
+                
+                await kv.set(`resume-${id}`, JSON.stringify(finalUpdatedData));
+                setResumeData(finalUpdatedData);
+            }
+        } catch (error) {
+            console.error('Error re-analyzing CV:', error);
+        } finally {
+            setIsReanalyzing(false);
+        }
+    };
+
     return (
         <main className="!pt-0 colorable-svg">
             <nav className="resume-nav">
@@ -120,7 +298,7 @@ const Resume = () => {
                 </Link>
             </nav>
             <div className="flex flex-row w-full max-lg:flex-col-reverse">
-                <CVRefineSectionBackground className="w-full h-[100vh] sticky top-0 items-center justify-center">
+                <CVRefineSectionBackground className="w-[50%] h-[100vh] sticky top-0 items-center justify-center">
                     <section className="feedback-section w-full h-[100vh] sticky top-0 items-center justify-center">
                         {imageUrl && resumeUrl && (
                             <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-2xl:h-fit w-fit">
@@ -131,60 +309,104 @@ const Resume = () => {
                         )}
                     </section>
                 </CVRefineSectionBackground>
-                <div className="feedback-section">
+                <div className="feedback-section !w-[50%]">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-4xl !text-black font-bold">CV Review</h2>
-                        {feedback && !showRestructured && (
-                            <button
-                                onClick={handleRestructureCV}
-                                disabled={isRestructuring}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                            >
-                                {isRestructuring ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Restructuring...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                        Restructure CV
-                                    </>
-                                )}
-                            </button>
-                        )}
-                        {showRestructured && (
-                            <div className="flex gap-2">
+                        <div>
+                            <h2 className="text-4xl !text-black font-bold">{title}</h2>
+                            {resumeData?.isRestructured && (
+                                <p className="text-sm text-green-600 mt-1">
+                                    ✓ This CV has been restructured and re-analyzed
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            {feedback && !showRestructured && !isReanalyzing && !restructuredCV ? (
                                 <button
-                                    onClick={() => setShowRestructured(false)}
-                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                    onClick={handleRestructureCV}
+                                    disabled={isRestructuring}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                                 >
-                                    Show Feedback
+                                    {isRestructuring ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            Restructuring...
+                                        </>
+                                    ) : (
+                                        <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                Restructure CV
+                                            
+                                            {/* {showRestructured && (
+                                            )} */}
+                                            
+                                        </>
+                                    )}
                                 </button>
-                                <button
-                                    onClick={() => setShowRestructured(true)}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    Show Restructured CV
-                                </button>
-                            </div>
-                        )}
+                            ): (
+                                <>
+                                    {!showRestructured && (
+                                        <button
+                                            onClick={() => {
+                                                setShowRestructured(true);
+                                                setTitle('Restructured CV');
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            Show Restructured CV
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                            {showRestructured && (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowRestructured(false);
+                                            setTitle('Feedback');
+                                        }}
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                    >
+                                        Show Feedback
+                                    </button>
+                                    {/* <button
+                                        onClick={() => setShowRestructured(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Show Restructured CV
+                                    </button> */}
+                                </div>
+                            )}
+                        </div>
                     </div>
+                    
+                    {isReanalyzing && (
+                        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                <p className="text-blue-800 font-medium">Re-analyzing your restructured CV...</p>
+                            </div>
+                            <p className="text-blue-600 text-sm mt-2">
+                                Your CV has been replaced with the restructured version and is being analyzed against the job description again.
+                            </p>
+                        </div>
+                    )}
                     
                     {showRestructured && restructuredCV ? (
                         <RestructuredCV 
                             restructuredCV={restructuredCV} 
                             isGenerating={isRestructuring}
+                            onReplaceCV={handleReplaceCV}
+                            isReplacing={isReplacing}
                         />
-                    ) : feedback ? (
+                    ) : feedback && !isReanalyzing ? (
                         <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
                             <Summary feedback={feedback} />
                             <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
                             <Details feedback={feedback} />
                         </div>
-                    ):(
+                    ) : (
                         <img src="/images/resume-scan-2.gif" className="w-full" />
                     )}
                 </div>

@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
-import { ArrowDown, ArrowUp, Copy, Download, FileText, CheckCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, Download, FileText, CheckCircle, Replace, RefreshCw } from 'lucide-react';
+import { generatePDF, generateDOCX, generateTXT } from '~/lib/document-generators';
 
 interface RestructuredCVProps {
   restructuredCV: RestructuredCV;
   isGenerating?: boolean;
+  onReplaceCV?: () => void;
+  isReplacing?: boolean;
 }
 
 const RestructuredCV: React.FC<RestructuredCVProps> = ({ 
   restructuredCV, 
-  isGenerating = false 
+  isGenerating = false,
+  onReplaceCV,
+  isReplacing = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
 
   const copyToClipboard = async (text: string, sectionName: string) => {
     try {
@@ -109,17 +116,28 @@ const RestructuredCV: React.FC<RestructuredCVProps> = ({
     return cvText;
   };
 
-  const downloadCV = () => {
-    const cvText = generateFullCVText();
-    const blob = new Blob([cvText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'restructured-cv.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownload = async (format: 'pdf' | 'docx' | 'txt') => {
+    setDownloadingFormat(format);
+    try {
+      const filename = `restructured-cv.${format}`;
+      
+      switch (format) {
+        case 'pdf':
+          generatePDF(restructuredCV, filename);
+          break;
+        case 'docx':
+          await generateDOCX(restructuredCV, filename);
+          break;
+        case 'txt':
+          generateTXT(restructuredCV, filename);
+          break;
+      }
+    } catch (error) {
+      console.error(`Error generating ${format.toUpperCase()}:`, error);
+    } finally {
+      setDownloadingFormat(null);
+      setShowDownloadMenu(false);
+    }
   };
 
   const CopyButton: React.FC<{ text: string; sectionName: string }> = ({ text, sectionName }) => (
@@ -157,18 +175,83 @@ const RestructuredCV: React.FC<RestructuredCVProps> = ({
     <div className="bg-white rounded-2xl shadow-md">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b">
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <FileText className="w-6 h-6 text-green-600" />
           <h3 className="text-2xl font-bold">Restructured CV</h3>
-        </div>
+        </div> */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={downloadCV}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Download
-          </button>
+          {/* Download with multiple formats */}
+          <div className="relative">
+            <button
+              onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={downloadingFormat !== null}
+            >
+              <Download className="w-4 h-4" />
+              {downloadingFormat ? (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  Generating...
+                </>
+              ) : (
+                'Download'
+              )}
+              <ArrowDown className="w-3 h-3" />
+            </button>
+            
+            {showDownloadMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => handleDownload('pdf')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    disabled={downloadingFormat !== null}
+                  >
+                    <FileText className="w-4 h-4 text-red-500" />
+                    Download as PDF
+                  </button>
+                  <button
+                    onClick={() => handleDownload('docx')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    disabled={downloadingFormat !== null}
+                  >
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    Download as DOCX
+                  </button>
+                  <button
+                    onClick={() => handleDownload('txt')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    disabled={downloadingFormat !== null}
+                  >
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Download as TXT
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Replace CV Button */}
+          {onReplaceCV && (
+            <button
+              onClick={onReplaceCV}
+              disabled={isReplacing}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isReplacing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Replacing...
+                </>
+              ) : (
+                <>
+                  <Replace className="w-4 h-4" />
+                  Replace Original CV
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => copyToClipboard(generateFullCVText(), 'Full CV')}
             className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
