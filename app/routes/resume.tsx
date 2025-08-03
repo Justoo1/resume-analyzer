@@ -6,7 +6,10 @@ import ATS from "~/components/feedback/ATS";
 import Details from "~/components/feedback/Details";
 import Summary from "~/components/feedback/Summary";
 import RestructuredCV from "~/components/RestructuredCV";
+import ErrorFeedback from "~/components/ErrorFeedback";
 import { usePuterStore } from "~/lib/puter";
+import { parseAPIError } from "~/lib/error-handler";
+import type { ErrorInfo } from "~/lib/error-handler";
 
 export const meta = () => {
     return [
@@ -27,6 +30,7 @@ const Resume = () => {
     const [showRestructured, setShowRestructured] = useState(false);
     const [isReplacing, setIsReplacing] = useState(false);
     const [isReanalyzing, setIsReanalyzing] = useState(false);
+    const [error, setError] = useState<ErrorInfo | null>(null);
     const [title, setTitle] = useState('CV Review');
     const navigate = useNavigate();
 
@@ -167,6 +171,7 @@ const Resume = () => {
         if (!resumeData || !feedback) return;
         
         setIsRestructuring(true);
+        setError(null);
         
         try {
             const restructurePrompt = prepareRestructureInstructions({
@@ -177,25 +182,40 @@ const Resume = () => {
             
             const response = await ai.restructure(resumeData.resumePath, restructurePrompt);
             
-            if (response) {
-                const responseText = typeof response.message.content === 'string' 
-                    ? response.message.content 
-                    : response.message.content[0].text;
-                
-                const restructuredData = JSON.parse(responseText);
-                setRestructuredCV(restructuredData);
-                setShowRestructured(true);
-                
-                // Save the restructured CV to storage
-                const updatedResumeData = {
-                    ...resumeData,
-                    restructuredCV: restructuredData
-                };
-                await kv.set(`resume-${id}`, JSON.stringify(updatedResumeData));
-                setResumeData(updatedResumeData);
+            if (!response) {
+                throw new Error('AI restructuring failed. Please try again later.');
             }
-        } catch (error) {
-            console.error('Error restructuring CV:', error);
+
+            // Check for API errors in the response
+            if (!(response as any).success && (response as any).error) {
+                throw response; // This will be caught and parsed as an API error
+            }
+                
+            const responseText = typeof response.message.content === 'string' 
+                ? response.message.content 
+                : response.message.content[0].text;
+                
+            let restructuredData;
+            try {
+                restructuredData = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error('Failed to process AI restructuring results. Please try again.');
+            }
+                
+            setRestructuredCV(restructuredData);
+            setShowRestructured(true);
+                
+            // Save the restructured CV to storage
+            const updatedResumeData = {
+                ...resumeData,
+                restructuredCV: restructuredData
+            };
+            await kv.set(`resume-${id}`, JSON.stringify(updatedResumeData));
+            setResumeData(updatedResumeData);
+        } catch (err: any) {
+            console.error('Error restructuring CV:', err);
+            const errorInfo = parseAPIError(err);
+            setError(errorInfo);
         } finally {
             setIsRestructuring(false);
         }
@@ -252,6 +272,7 @@ const Resume = () => {
 
     const reanalyzeCV = async (newFilePath: string, updatedData: any) => {
         setIsReanalyzing(true);
+        setError(null);
         
         try {
             // Import the feedback prompt preparation function
@@ -264,26 +285,41 @@ const Resume = () => {
             
             const response = await ai.feedback(newFilePath, feedbackPrompt);
             
-            if (response) {
-                const responseText = typeof response.message.content === 'string' 
-                    ? response.message.content 
-                    : response.message.content[0].text;
-                
-                const newFeedback = JSON.parse(responseText);
-                setFeedback(newFeedback);
-                
-                // Update the resume data with new feedback
-                const finalUpdatedData = {
-                    ...updatedData,
-                    feedback: newFeedback,
-                    reanalyzedAt: new Date().toISOString()
-                };
-                
-                await kv.set(`resume-${id}`, JSON.stringify(finalUpdatedData));
-                setResumeData(finalUpdatedData);
+            if (!response) {
+                throw new Error('AI re-analysis failed. Please try again later.');
             }
-        } catch (error) {
-            console.error('Error re-analyzing CV:', error);
+
+            // Check for API errors in the response
+            if ('error' in response) {
+                throw response; // This will be caught and parsed as an API error
+            }
+                
+            const responseText = typeof response.message.content === 'string' 
+                ? response.message.content 
+                : response.message.content[0].text;
+                
+            let newFeedback;
+            try {
+                newFeedback = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error('Failed to process AI re-analysis results. Please try again.');
+            }
+                
+            setFeedback(newFeedback);
+                
+            // Update the resume data with new feedback
+            const finalUpdatedData = {
+                ...updatedData,
+                feedback: newFeedback,
+                reanalyzedAt: new Date().toISOString()
+            };
+                
+            await kv.set(`resume-${id}`, JSON.stringify(finalUpdatedData));
+            setResumeData(finalUpdatedData);
+        } catch (err: any) {
+            console.error('Error re-analyzing CV:', err);
+            const errorInfo = parseAPIError(err);
+            setError(errorInfo);
         } finally {
             setIsReanalyzing(false);
         }
@@ -411,6 +447,19 @@ const Resume = () => {
                     )}
                 </div>
             </div>
+
+            {/* Error Feedback Modal */}
+            {error && (
+                <ErrorFeedback
+                    error={error}
+                    onClose={() => setError(null)}
+                    onRetry={error.type !== 'usage_limit' ? () => {
+                        setError(null);
+                        // Optionally retry the last operation
+                    } : undefined}
+                    showRetryTimer={error.type === 'usage_limit'}
+                />
+            )}
         </main>
     )
 }

@@ -22,6 +22,7 @@ export default function Home() {
 
 
   useEffect(() => {
+    console.log(auth)
     if(!auth.isAuthenticated) navigate('/auth?next=/')
   }, [auth.isAuthenticated])
 
