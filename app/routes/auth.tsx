@@ -40,7 +40,7 @@ const Auth = () => {
                                 </button>
                             ):(
                                 <button className="auth-button" onClick={auth.signIn}>
-                                    <p>Sign In</p>
+                                    <p>Let's Get Started</p>
                                 </button>
                             )}
                         </>
