@@ -152,8 +152,9 @@ export class ResumeAnalyzerService {
   }
 
   private async callPuterAI(resumeFile: File, prompt: string, jobTitle: string) {
-    // Upload file first
+    // Upload file first 
     const uploadedFile = await this.puterAI.fs.upload([resumeFile]);
+    // check if file was uploaded
     if (!uploadedFile) throw new Error('Failed to upload resume file');
     
     // Call Puter AI

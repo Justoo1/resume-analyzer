@@ -3,6 +3,7 @@ import { useNotifications } from '~/lib/notifications';
 import NotificationItem from './NotificationItem';
 
 const NotificationContainer = () => {
+  // Access notifications and removeNotification from the context
   const { notifications, removeNotification } = useNotifications();
 
   if (notifications.length === 0) return null;

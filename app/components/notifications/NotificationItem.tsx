@@ -87,7 +87,7 @@ const NotificationItem = ({ notification, onRemove }: NotificationItemProps) => 
           <p className={`mt-1 text-sm ${getMessageColor()}`}>
             {notification.message}
           </p>
-          
+          {/* Actions */}
           {notification.actions && notification.actions.length > 0 && (
             <div className="mt-3 flex space-x-2">
               {notification.actions.map((action, index) => (

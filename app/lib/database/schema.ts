@@ -24,7 +24,7 @@ export interface UsageRecord {
 
 export interface AnalysisHistory {
   id: string;
-  userId: string;
+  userId: string; // User ID
   resumePath: string;
   imagePath: string;
   companyName: string;

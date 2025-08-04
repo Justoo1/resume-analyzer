@@ -1,4 +1,3 @@
-// lib/errorHandler.ts
 import type { ApiError, NotificationAction } from '~/types/notification';
 
 export interface ErrorHandlerConfig {

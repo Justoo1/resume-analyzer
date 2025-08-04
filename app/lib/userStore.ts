@@ -4,7 +4,7 @@ import { Database } from './database/schema';
 import type { User } from './database/schema';
 
 interface UserStore {
-  // State
+  // State properties
   currentUser: User | null;
   isLoading: boolean;
   error: string | null;

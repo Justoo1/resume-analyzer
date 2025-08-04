@@ -7,6 +7,7 @@ import { CVRefineSectionBackground } from '~/components/background';
 import { useUserStore } from '~/lib/userStore';
 import { useNotifications } from '~/lib/notifications';
 
+// routes/premium.tsx
 const PremiumPage = () => {
   const navigate = useNavigate();
   const { currentUser, isPremium, isTrialActive, daysLeftInTrial } = useUserStore();

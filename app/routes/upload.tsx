@@ -22,7 +22,7 @@ const Upload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [usageInfo, setUsageInfo] = useState<{unlimited: boolean; used: number; remaining: string | number}>({unlimited: false, used: 0, remaining: 3});
 
-  // Initialize user when Puter auth is ready
+  // Initialize user when Puter auth is ready and kv is available
   useEffect(() => {
     const initUser = async () => {
       if (auth.isAuthenticated && auth.user && kv) {
