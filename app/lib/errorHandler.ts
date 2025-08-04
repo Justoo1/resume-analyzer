@@ -45,11 +45,18 @@ export const handleApiError = (error: any, config: ErrorHandlerConfig) => {
 const handleUsageLimitError = (addNotification: any, navigate?: any) => {
   const actions: NotificationAction[] = [
     {
-      label: 'View Plans',
+      label: 'Upgrade to Pro',
+      onClick: () => {
+        navigate ? navigate('/premium') : window.location.href = '/premium';
+      },
+      variant: 'primary'
+    },
+    {
+      label: 'Upgrade Puter',
       onClick: () => {
         window.open('https://puter.com/pricing', '_blank');
       },
-      variant: 'primary'
+      variant: 'secondary'
     }
   ];
 
@@ -64,7 +71,7 @@ const handleUsageLimitError = (addNotification: any, navigate?: any) => {
   addNotification({
     type: 'error',
     title: 'AI Usage Limit Reached',
-    message: 'You have reached your AI usage limit. Please upgrade your plan to continue analyzing resumes.',
+    message: 'You\'ve reached your AI usage limit. Upgrade to Resume Analyzer Pro for unlimited analyses with advanced features, or upgrade your Puter plan for more AI credits.',
     duration: 0, // Persistent notification
     actions,
     dismissible: true,
