@@ -232,7 +232,7 @@ const RestructuredCV: React.FC<RestructuredCVProps> = ({
           </div>
 
           {/* Replace CV Button */}
-          {onReplaceCV && (
+{/*           {onReplaceCV && (
             <button
               onClick={onReplaceCV}
               disabled={isReplacing}
@@ -250,7 +250,7 @@ const RestructuredCV: React.FC<RestructuredCVProps> = ({
                 </>
               )}
             </button>
-          )}
+          )} */}
 
           <button
             onClick={() => copyToClipboard(generateFullCVText(), 'Full CV')}
